@@ -159,21 +159,89 @@ void IbisHardwareIGSIO::Update()
     // Push images, transforms and states to the TrackedSceneObjects
     foreach( Tool * tool, m_tools )
     {
-        if( tool->transformDevice )
+        if( tool->transformDevice.size() == 1 )
         {
-            if( tool->transformDevice->GetDeviceType() == igtlioImageConverter::GetIGTLTypeName() )
+            // There is only one tracking device for the tool
+            if( tool->transformDevice[0] )
             {
-                igtlioImageDevice * imageDevice = igtlioImageDevice::SafeDownCast( tool->transformDevice );
-                tool->sceneObject->SetInputMatrix( imageDevice->GetContent().transform );
+                if( tool->transformDevice[0]->GetDeviceType() == igtlioImageConverter::GetIGTLTypeName() )
+                {
+                    igtlioImageDevice * imageDevice = igtlioImageDevice::SafeDownCast(tool->transformDevice[0]);
+                    tool->sceneObject->SetInputMatrix(imageDevice->GetContent().transform);
+                }
+                else if( tool->transformDevice[0]->GetDeviceType() == igtlioTransformConverter::GetIGTLTypeName() )
+                {
+                    igtlioTransformDevice * transformDevice = igtlioTransformDevice::SafeDownCast(tool->transformDevice[0]);
+                    tool->sceneObject->SetInputMatrix(transformDevice->GetContent().transform);
+                }
+                tool->sceneObject->SetTimestamp(tool->transformDevice[0]->GetTimestamp());
+                tool->sceneObject->SetState(ComputeToolStatus(tool->transformDevice[0], tool));
             }
-            else if( tool->transformDevice->GetDeviceType() == igtlioTransformConverter::GetIGTLTypeName() )
-            {
-                igtlioTransformDevice * transformDevice = igtlioTransformDevice::SafeDownCast( tool->transformDevice );
-                tool->sceneObject->SetInputMatrix( transformDevice->GetContent().transform );
-            }
-            tool->sceneObject->SetTimestamp( tool->transformDevice->GetTimestamp() );
-            tool->sceneObject->SetState( ComputeToolStatus( tool->transformDevice, tool ) );
         }
+        else if( tool->transformDevice.size() > 1 )
+        {
+            // More than one tracking device for the tool
+            // Append transform matrices and compute the average transform
+            std::vector< vtkSmartPointer<vtkMatrix4x4> > mats;
+            for( int i = 0; i < tool->transformDevice.size(); i++ )
+            {
+                if( tool->transformDevice[i]->GetDeviceType() == igtlioImageConverter::GetIGTLTypeName() )
+                {
+                    igtlioImageDevice * imageDevice = igtlioImageDevice::SafeDownCast(tool->transformDevice[i]);
+                    TrackerToolState status = ComputeToolStatus(tool->transformDevice[i], tool);
+                    // Device is considered if its status is OK (add OutOfVolume?)
+                    if( status == TrackerToolState::Ok )
+                        mats.push_back(imageDevice->GetContent().transform);
+                }
+                else if( tool->transformDevice[i]->GetDeviceType() == igtlioTransformConverter::GetIGTLTypeName() )
+                {
+                    igtlioTransformDevice * transformDevice = igtlioTransformDevice::SafeDownCast(tool->transformDevice[i]);
+                    TrackerToolState status = ComputeToolStatus(tool->transformDevice[i], tool);
+                    // Device is considered if its status is OK (add OutOfVolume?)
+                    if( status == TrackerToolState::Ok )
+                        mats.push_back(transformDevice->GetContent().transform);
+                }
+                // Assign timestamp of the last tracking device
+                tool->sceneObject->SetTimestamp(tool->transformDevice[i]->GetTimestamp());
+            }
+            if( mats.size() == 0 )
+            {
+                // No tracking device with Ok status, set status to Missing
+                tool->sceneObject->SetState( TrackerToolState::Missing );
+            }
+            else if( mats.size() == 1 )
+            {
+                // One tracking device with Ok status
+                tool->sceneObject->SetInputMatrix(mats[0]);
+            }
+            else
+            {
+                // More than one tracking device with Ok status, compute average transform
+                double orientations[3] = {0.0, 0.0, 0.0};
+                double pos[3] = {0.0, 0.0, 0.0};
+                for( int i = 0; i < mats.size(); i++ )
+                {
+                    double io[3], ip[3];
+                    vtkSmartPointer<vtkTransform> transform = vtkSmartPointer<vtkTransform>::New();
+                    transform->SetMatrix(mats[i]);
+                    transform->GetOrientation(io);
+                    transform->GetPosition(ip);
+                    orientations[0] += io[0] / mats.size();
+                    orientations[1] += io[1] / mats.size();
+                    orientations[2] += io[2] / mats.size();
+                    pos[0] += ip[0] / mats.size();
+                    pos[1] += ip[1] / mats.size();
+                    pos[2] += ip[2] / mats.size();
+                }
+                vtkSmartPointer<vtkTransform> transform = vtkSmartPointer<vtkTransform>::New();
+                double angle = vtkMath::Normalize(orientations);
+                transform->RotateWXYZ(angle, orientations);
+                transform->Translate(pos);
+                tool->sceneObject->SetState(TrackerToolState::Ok);
+                tool->sceneObject->SetInputMatrix(transform->GetMatrix());
+            }
+        }
+        
         if( tool->imageDevice )
         {
             // simtodo : We should not have to do this every frame. Check UsProbeObject and CameraObject pipeline logic.
@@ -303,7 +371,8 @@ void IbisHardwareIGSIO::OnDeviceNew( vtkObject*, unsigned long, void*, void * ca
     // Specify the device should be used to recover transform on every update
     if( toolPart == "ImageAndTransform" || toolPart == "Transform" )
     {
-        m_tools[ toolIndex ]->transformDevice = device;
+        m_tools[ toolIndex ]->transformDevice.push_back(device);
+        //m_tools[toolIndex]->transformDevice = device;
     }
 }
 
@@ -324,7 +393,12 @@ void IbisHardwareIGSIO::OnDeviceRemoved( vtkObject*, unsigned long, void*, void 
     }
     else if( toolPart == "Transform" )
     {
-        m_tools[ toolIndex ]->transformDevice = nullptr;
+        for( int i = 0; i < m_tools[toolIndex]->transformDevice.size(); i++ )
+        {
+            m_tools[toolIndex]->transformDevice[i] = nullptr;
+        }
+        m_tools[toolIndex]->transformDevice.clear();
+        //m_tools[ toolIndex ]->transformDevice = nullptr;
     }
 }
 
