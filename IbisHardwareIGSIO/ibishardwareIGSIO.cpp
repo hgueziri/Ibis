@@ -191,7 +191,7 @@ void IbisHardwareIGSIO::Update()
                     TrackerToolState status = ComputeToolStatus(tool->transformDevice[i], tool);
                     // Device is considered if its status is OK (add OutOfVolume?)
                     if( status == TrackerToolState::Ok )
-                        mats.push_back(imageDevice->GetContent().transform);
+                        mats.push_back(imageDevice->GetContent().transform); //TODO: deepcopy?
                 }
                 else if( tool->transformDevice[i]->GetDeviceType() == igtlioTransformConverter::GetIGTLTypeName() )
                 {
@@ -199,7 +199,7 @@ void IbisHardwareIGSIO::Update()
                     TrackerToolState status = ComputeToolStatus(tool->transformDevice[i], tool);
                     // Device is considered if its status is OK (add OutOfVolume?)
                     if( status == TrackerToolState::Ok )
-                        mats.push_back(transformDevice->GetContent().transform);
+                        mats.push_back(transformDevice->GetContent().transform); //TODO: deepcopy?
                 }
                 // Assign timestamp of the last tracking device
                 tool->sceneObject->SetTimestamp(tool->transformDevice[i]->GetTimestamp());
@@ -217,26 +217,26 @@ void IbisHardwareIGSIO::Update()
             else
             {
                 // More than one tracking device with Ok status, compute average transform
-                double orientations[3] = {0.0, 0.0, 0.0};
+                double wxyz[4] = {0.0, 0.0, 0.0, 0.0};
                 double pos[3] = {0.0, 0.0, 0.0};
                 for( int i = 0; i < mats.size(); i++ )
                 {
-                    double io[3], ip[3];
+                    double io[4], ip[3];
                     vtkSmartPointer<vtkTransform> transform = vtkSmartPointer<vtkTransform>::New();
                     transform->SetMatrix(mats[i]);
-                    transform->GetOrientation(io);
+                    transform->GetOrientationWXYZ(io);
                     transform->GetPosition(ip);
-                    orientations[0] += io[0] / mats.size();
-                    orientations[1] += io[1] / mats.size();
-                    orientations[2] += io[2] / mats.size();
+                    wxyz[0] += io[0] / mats.size(); // angle w
+                    wxyz[1] += io[1] / mats.size();
+                    wxyz[2] += io[2] / mats.size();
+                    wxyz[3] += io[3] / mats.size();
                     pos[0] += ip[0] / mats.size();
                     pos[1] += ip[1] / mats.size();
                     pos[2] += ip[2] / mats.size();
                 }
                 vtkSmartPointer<vtkTransform> transform = vtkSmartPointer<vtkTransform>::New();
-                double angle = vtkMath::Normalize(orientations);
-                transform->RotateWXYZ(angle, orientations);
                 transform->Translate(pos);
+                transform->RotateWXYZ(wxyz[0], wxyz[1], wxyz[2], wxyz[3]);
                 tool->sceneObject->SetState(TrackerToolState::Ok);
                 tool->sceneObject->SetInputMatrix(transform->GetMatrix());
             }
