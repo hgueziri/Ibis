@@ -107,7 +107,7 @@ protected:
         Tool() { lastTimeStamp = 0.0; lastTimeStampModifiedTime = 0.0; }
         vtkSmartPointer<TrackedSceneObject> sceneObject;
         vtkSmartPointer<PolyDataObject> toolModel;
-        igtlioDevicePointer transformDevice;
+        std::vector<igtlioDevicePointer> transformDevice;
         igtlioDevicePointer imageDevice;
 
         // timestamps used to compute tool status when not in Metadata
