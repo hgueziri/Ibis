@@ -189,16 +189,16 @@ void IbisHardwareIGSIO::Update()
                 {
                     igtlioImageDevice * imageDevice = igtlioImageDevice::SafeDownCast(tool->transformDevice[i]);
                     TrackerToolState status = ComputeToolStatus(tool->transformDevice[i], tool);
-                    // Device is considered if its status is OK (add OutOfVolume?)
-                    if( status == TrackerToolState::Ok )
+                    // Device is considered if its status is OK
+                    if(( status == TrackerToolState::Ok ) | ( status == TrackerToolState::OutOfVolume ))
                         mats.push_back(imageDevice->GetContent().transform); //TODO: deepcopy?
                 }
                 else if( tool->transformDevice[i]->GetDeviceType() == igtlioTransformConverter::GetIGTLTypeName() )
                 {
                     igtlioTransformDevice * transformDevice = igtlioTransformDevice::SafeDownCast(tool->transformDevice[i]);
                     TrackerToolState status = ComputeToolStatus(tool->transformDevice[i], tool);
-                    // Device is considered if its status is OK (add OutOfVolume?)
-                    if( status == TrackerToolState::Ok )
+                    // Device is considered if its status is OK
+                    if(( status == TrackerToolState::Ok ) | ( status == TrackerToolState::OutOfVolume ))
                         mats.push_back(transformDevice->GetContent().transform); //TODO: deepcopy?
                 }
                 // Assign timestamp of the last tracking device
@@ -212,11 +212,13 @@ void IbisHardwareIGSIO::Update()
             else if( mats.size() == 1 )
             {
                 // One tracking device with Ok status
+                tool->sceneObject->SetState(TrackerToolState::Ok);
                 tool->sceneObject->SetInputMatrix(mats[0]);
             }
             else
             {
                 // More than one tracking device with Ok status, compute average transform
+                // TODO: OutOfVolume status should have less weight than Ok
                 double wxyz[4] = {0.0, 0.0, 0.0, 0.0};
                 double pos[3] = {0.0, 0.0, 0.0};
                 for( int i = 0; i < mats.size(); i++ )
@@ -239,6 +241,7 @@ void IbisHardwareIGSIO::Update()
                 transform->RotateWXYZ(wxyz[0], wxyz[1], wxyz[2], wxyz[3]);
                 tool->sceneObject->SetState(TrackerToolState::Ok);
                 tool->sceneObject->SetInputMatrix(transform->GetMatrix());
+
             }
         }
         
