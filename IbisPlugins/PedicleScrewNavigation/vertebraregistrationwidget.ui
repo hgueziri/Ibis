@@ -414,13 +414,13 @@ All pixels</string>
                  <number>1</number>
                 </property>
                 <property name="maximum">
-                 <number>32</number>
+                 <number>64</number>
                 </property>
                 <property name="pageStep">
                  <number>8</number>
                 </property>
                 <property name="value">
-                 <number>32</number>
+                 <number>64</number>
                 </property>
                 <property name="notchesVisible">
                  <bool>true</bool>
@@ -437,7 +437,7 @@ All pixels</string>
                 </property>
                 <property name="text">
                  <string>Selectivity
-32</string>
+64</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>

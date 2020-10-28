@@ -13,6 +13,8 @@ set( PluginHdrMoc
      screwnavigationwidget.h
      screwtablewidget.h
      screwproperties.h
+     itkUSDepthCompensationFilter.h
+     itkUSDepthCompensationFilter.hxx
     )
 
 set( PluginUi vertebraregistrationwidget.ui screwnavigationwidget.ui screwtablewidget.ui )

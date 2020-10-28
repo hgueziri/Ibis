@@ -174,6 +174,8 @@ public:
 
   using FixedImageMaskIteratorType = itk::ImageRegionConstIteratorWithIndex< FixedImageMaskType >;
   using FixedImageIteratorType = itk::ImageRegionConstIteratorWithIndex< FixedImageType >;
+ 
+  itkGetMacro(FixedGradientImage, FixedImageGradientPointer);
 
   void Update(void);
 
@@ -273,6 +275,9 @@ protected:
   cl_mem                      m_MovingGPUImage;
   InternalRealType *          m_cpuFixedImageBuffer;
   cl_mem                      m_FixedGPUImage;
+
+  FixedImageGradientPointer     m_FixedGradientImage;
+  FixedImageGradientPointer     m_MovingGradientImage;
 
 private:
   GPUOrientationMatchingMatrixTransformationSparseMask(const Self &);   //purposely not implemented

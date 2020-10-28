@@ -87,6 +87,8 @@ public:
 
   typedef itk::GPUOrientationMatchingMatrixTransformationSparseMask<TFixedImage, TMovingImage>
                                                                     GPUOrientationMetricType;
+  typedef typename GPUOrientationMetricType::FixedImageGradientType FixedImageGradientType;
+  typedef typename FixedImageGradientType::Pointer                  FixedImageGradientPointer;
 
   typedef itk::ImageMaskSpatialObject< 3 >                          ImageMaskType;
   typedef ImageMaskType::Pointer                                    ImageMaskPointer;
@@ -264,6 +266,14 @@ public:
           m_GPUOrientationMetric->Update();
         }
 
+    }
+
+  FixedImageGradientPointer GetFixedGradientImage()
+    {
+    if( m_GPUOrientationMetric )
+      {
+      return m_GPUOrientationMetric->GetFixedGradientImage();
+      }
     }
 
 

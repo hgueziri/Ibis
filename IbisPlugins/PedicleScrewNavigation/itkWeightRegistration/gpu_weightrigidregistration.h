@@ -32,7 +32,7 @@ public:
     typedef itk::CMAEvolutionStrategyOptimizer          OptimizerType;
 
     typedef itk::GPU3DRigidSimilarityWeightMetric<IbisItkFloat3ImageType, IbisItkFloat3ImageType>
-                                                        GPUCostFunctionType;
+        GPUCostFunctionType;
     typedef GPUCostFunctionType::Pointer                GPUCostFunctionPointer;
 
     typedef itk::Euler3DTransform<double>               ItkRigidTransformType;
@@ -41,6 +41,9 @@ public:
     typedef ImageMaskType::Pointer                      ImageMaskPointer;
     typedef GPUCostFunctionType::SamplingStrategy       OrientationSamplingStrategy;
     typedef GPUCostFunctionType::RegistrationMetricToUseType    RegistrationMetricToUseType;
+
+    typedef typename GPUCostFunctionType::FixedImageGradientType    FixedImageGradientType;
+    typedef typename FixedImageGradientType::Pointer                FixedImageGradientPointer;
 
     explicit GPU_WeightRigidRegistration();
     ~GPU_WeightRigidRegistration();
@@ -54,7 +57,7 @@ public:
     void SetVtkTransform(vtkTransform * transform) { this->m_resultTransform = transform; } // LocalTransform of the ImageObject
     void SetInitialSigma(double initialSigma) { this->m_initialSigma = initialSigma; }
     void SetPopulationSize(unsigned int populationSize) { this->m_populationSize = populationSize; }
-    void SetParentVtkTransform( vtkTransform * transform ) { this->m_parentVtkTransform = transform; }
+    void SetParentVtkTransform(vtkTransform * transform) { this->m_parentVtkTransform = transform; }
     void SetDebugOn() { m_debug = true; }
     void SetDebugOff() { m_debug = false; }
     void SetDebug(bool debug) { this->m_debug = debug; }
@@ -63,7 +66,7 @@ public:
     void SetOrientationNumberOfPixels(unsigned int numberOfPixels) { this->m_orientationNumberOfPixels = numberOfPixels; }
     void SetOrientationSelectivity(unsigned int orientationSelectivity) { m_orientationSelectivity = orientationSelectivity; }
     void SetUseMask(bool usemask) { this->m_useMask = usemask; }
-    void SetLambdaMetricBalance( double lambda ) { this->m_lambdaMetricBalance = lambda; }
+    void SetLambdaMetricBalance(double lambda) { this->m_lambdaMetricBalance = lambda; }
 
     double GetOrientationPercentile() { return m_orientationPercentile; }
     unsigned int GetOrientationNumberOfPixels() { return m_orientationNumberOfPixels; }
@@ -71,31 +74,41 @@ public:
     bool GetUseMask() { return m_useMask; }
     double GetLambdaMetricBalance() { return m_lambdaMetricBalance; }
 
-    void SetSamplingStrategyToRandom()    { this->m_orientationSamplingStrategy = OrientationSamplingStrategy::RANDOM; }
-    void SetSamplingStrategyToGrid()      { this->m_orientationSamplingStrategy = OrientationSamplingStrategy::GRID; }
-    void SetSamplingStrategyToFull()      { this->m_orientationSamplingStrategy = OrientationSamplingStrategy::FULL; }
+    void SetSamplingStrategyToRandom() { this->m_orientationSamplingStrategy = OrientationSamplingStrategy::RANDOM; }
+    void SetSamplingStrategyToGrid() { this->m_orientationSamplingStrategy = OrientationSamplingStrategy::GRID; }
+    void SetSamplingStrategyToFull() { this->m_orientationSamplingStrategy = OrientationSamplingStrategy::FULL; }
     OrientationSamplingStrategy GetSamplingStrategy() { return this->m_orientationSamplingStrategy; }
 
-    void SetRegistrationMetricToIntensity()                 { this->m_registrationMetricToUse = RegistrationMetricToUseType::INTENSITY; }
-    void SetRegistrationMetricToGradientOrientation()       { this->m_registrationMetricToUse = RegistrationMetricToUseType::GRADIENT; }
-    void SetRegistrationMetricToCombination()               { this->m_registrationMetricToUse = RegistrationMetricToUseType::COMBINATION; }
-    RegistrationMetricToUseType GetRegistrationMetricToUse(){ return this->m_registrationMetricToUse; }
+    void SetRegistrationMetricToIntensity() { this->m_registrationMetricToUse = RegistrationMetricToUseType::INTENSITY; }
+    void SetRegistrationMetricToGradientOrientation() { this->m_registrationMetricToUse = RegistrationMetricToUseType::GRADIENT; }
+    void SetRegistrationMetricToCombination() { this->m_registrationMetricToUse = RegistrationMetricToUseType::COMBINATION; }
+    RegistrationMetricToUseType GetRegistrationMetricToUse() { return this->m_registrationMetricToUse; }
 
-    void SetTargetMask(ImageMaskPointer mask) { this->m_targetSpatialObjectMask = mask;}
+    void SetTargetMask(ImageMaskPointer mask) { this->m_targetSpatialObjectMask = mask; }
 
     double GetInitialSigma() { return m_initialSigma; }
     unsigned int GetPopulationSize() { return m_populationSize; }
     vtkTransform * GetResultTransform() { return m_resultTransform; }
 
+    void StoreFixedGradientImageOn() { m_StoreFixedGradientImage = true; }
+    void StoreFixedGradientImageOff() { m_StoreFixedGradientImage = false; }
+    void SetStoreFixedGradientImage(bool store) { m_StoreFixedGradientImage = store; }
+    bool GetStoreFixedGradientImage() { return m_StoreFixedGradientImage; }
+    
+    FixedImageGradientPointer GetFixedGradientImage() { return m_FixedGradientImage; }   
+    
 private:
 
     void updateTagsDistance();
 
     bool m_OptimizationRunning;
     bool m_debug;
+    bool m_StoreFixedGradientImage;
 
     IbisItkFloat3ImageType::Pointer m_itkSourceImage;
     IbisItkFloat3ImageType::Pointer m_itkTargetImage;
+
+    FixedImageGradientPointer       m_FixedGradientImage;
 
     vtkTransform * m_sourceVtkTransform;
     vtkTransform * m_targetVtkTransform;

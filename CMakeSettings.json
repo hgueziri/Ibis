@@ -1,0 +1,10 @@
+﻿{
+   "configurations": [
+      {
+         "name": "Release",
+         "cacheRoot": "D:/b/Ibis",
+         "inheritEnvironments": [],
+         "variables": []
+      }
+   ]
+}

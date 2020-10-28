@@ -12,6 +12,12 @@ See Copyright.txt or http://ibisneuronav.org/Copyright.html for details.
 
 #include "vertebraregistrationwidget.h"
 #include "ui_vertebraregistrationwidget.h"
+#include "itkUSDepthCompensationFilter.h"
+
+#include "itkImageRegistrationMethodv4.h"
+#include "itkCorrelationImageToImageMetricv4.h"
+#include "itkRegularStepGradientDescentOptimizerv4.h"
+#include "itkEuler3DTransform.h"
 
 VertebraRegistrationWidget::VertebraRegistrationWidget(QWidget *parent) :
     QWidget(parent),
@@ -23,9 +29,9 @@ VertebraRegistrationWidget::VertebraRegistrationWidget(QWidget *parent) :
     m_lambdaMetricBalance(0.5),
     m_showAdvancedSettings(false),
     m_optNumberOfPixels(128000),
-    m_optSelectivity(32),
+    m_optSelectivity(64),
     m_optPercentile(0.8),
-    m_optPopulationSize(60),
+    m_optPopulationSize(80),
     m_optInitialSigma(1.0)
 {
     m_pluginInterface = 0;
@@ -145,7 +151,7 @@ void VertebraRegistrationWidget::UpdateUi()
     ui->optPopulationSizeComboBox->addItem( tr( "70" ), 70 );
     ui->optPopulationSizeComboBox->addItem( tr( "80" ), 80 );
     ui->optPopulationSizeComboBox->addItem( tr( "90" ), 90 );
-    ui->optPopulationSizeComboBox->setCurrentIndex( 2 );
+    ui->optPopulationSizeComboBox->setCurrentIndex( 4 );
     
     ui->optInitialSigmaComboBox->addItem( tr( "0.1" ), 0.1 );
     ui->optInitialSigmaComboBox->addItem( tr( "1.0" ), 1.0 );
@@ -301,7 +307,11 @@ bool VertebraRegistrationWidget::CreateVolumeFromSlices(USAcquisitionObject *usA
 
             // put image in vector
             typedef itk::ImageDuplicator<IbisItkFloat3ImageType> DuplicatorType;
+            //typedef itk::USDepthCompensationFilter< IbisItkFloat3ImageType > USFilterType;
+            //USFilterType::Pointer filter = USFilterType::New();
             DuplicatorType::Pointer duplicator = DuplicatorType::New();
+            //filter->SetInput(itkImage);
+            //duplicator->SetInputImage(filter->GetOutput());
             duplicator->SetInputImage(itkImage);
             duplicator->Update();
 
@@ -599,8 +609,160 @@ bool VertebraRegistrationWidget::Register()
 
         rigidRegistrator->runRegistration();
 
+        vtkSmartPointer<vtkTransform> dummyTx = vtkSmartPointer<vtkTransform>::New();
+        dummyTx->DeepCopy(sourceVtkTransform);
+        SceneObject * tobj = SceneObject::New();
+        tobj->SetName("Grad+Int Transform");
+        tobj->SetLocalTransform(dummyTx);
+        ibisAPI->AddObject(tobj, ibisAPI->GetCurrentObject());
+
+        // add stabilizing registration
+        //>>>>>>>*******************************************//
+        using TransformType = itk::Euler3DTransform<double>;
+        
+        using OptimizerType = itk::RegularStepGradientDescentOptimizerv4<double>;
+        OptimizerType::Pointer optimizer = OptimizerType::New();
+        optimizer->SetLearningRate(0.2);
+        optimizer->SetMinimumStepLength(0.001);
+        optimizer->SetRelaxationFactor(0.5);
+        optimizer->SetNumberOfIterations(5);
+
+        using MetricType = itk::CorrelationImageToImageMetricv4<IbisItkFloat3ImageType, IbisItkFloat3ImageType>;
+        MetricType::Pointer metric = MetricType::New();
+
+        using RegistrationType = itk::ImageRegistrationMethodv4<IbisItkFloat3ImageType, IbisItkFloat3ImageType>;
+        RegistrationType::Pointer registration = RegistrationType::New();
+        registration->SetMetric(metric);
+        registration->SetOptimizer(optimizer);
+        registration->SetFixedImage(itkTargetImage);
+        registration->SetMovingImage(itkSourceImage);
+
+        TransformType::Pointer itkTransform = TransformType::New();
+        vtkSmartPointer<vtkMatrix4x4> finalMatrix = vtkSmartPointer<vtkMatrix4x4>::New();
+        sourceVtkTransform->GetInverse(finalMatrix);
+
+        TransformType::OffsetType offset;
+        vnl_matrix<double> M(3, 3);
+        for( unsigned int i = 0; i < 3; i++ )
+        {
+            for( unsigned int j = 0; j < 3; j++ )
+            {
+                M[i][j] = finalMatrix->GetElement(i, j);
+            }
+            offset[i] = finalMatrix->GetElement(i, 3);
+        }
+
+        double angleX, angleY, angleZ;
+        angleX = vcl_asin(M[2][1]);
+        double A = vcl_cos(angleX);
+        if( vcl_fabs(A) > 0.00005 )
+        {
+            double x = M[2][2] / A;
+            double y = -M[2][0] / A;
+            angleY = vcl_atan2(y, x);
+
+            x = M[1][1] / A;
+            y = -M[0][1] / A;
+            angleZ = vcl_atan2(y, x);
+        }
+        else
+        {
+            angleZ = 0;
+            double x = M[0][0];
+            double y = M[1][0];
+            angleY = vcl_atan2(y, x);
+        }
+
+        TransformType::ParametersType params = TransformType::ParametersType(6);
+        params[0] = angleX; params[1] = angleY; params[2] = angleZ;
+
+        TransformType::CenterType center;
+        center[0] = itkTargetImage->GetOrigin()[0] + itkTargetImage->GetSpacing()[0] * itkTargetImage->GetBufferedRegion().GetSize()[0] / 2.0;
+        center[1] = itkTargetImage->GetOrigin()[1] + itkTargetImage->GetSpacing()[1] * itkTargetImage->GetBufferedRegion().GetSize()[1] / 2.0;
+        center[2] = itkTargetImage->GetOrigin()[2] + itkTargetImage->GetSpacing()[2] * itkTargetImage->GetBufferedRegion().GetSize()[2] / 2.0;
+
+        for( unsigned int i = 0; i < 3; i++ )
+        {
+            params[i + 3] = offset[i] - center[i];
+            for( unsigned int j = 0; j < 3; j++ )
+            {
+                params[i + 3] += M[i][j] * center[j];
+            }
+        }
+
+        itkTransform->SetCenter(center);
+        itkTransform->SetParameters(params);
+        registration->SetInitialTransform(itkTransform);
+
+        constexpr unsigned int numberOfLevels = 1;
+        registration->SetNumberOfLevels(numberOfLevels);
+
+        RegistrationType::ShrinkFactorsArrayType shrinkFactorsPerLevel;
+        shrinkFactorsPerLevel.SetSize(1);
+        shrinkFactorsPerLevel[0] = 2.0;
+        registration->SetShrinkFactorsPerLevel(shrinkFactorsPerLevel);
+
+        RegistrationType::SmoothingSigmasArrayType smoothingSigmasPerLevel;
+        smoothingSigmasPerLevel.SetSize(1);
+        smoothingSigmasPerLevel[0] = 0;
+        registration->SetSmoothingSigmasPerLevel(smoothingSigmasPerLevel);
+ 
+        try
+        {
+            registration->Update();
+            std::cout << "Optimizer stop condition: " << registration->GetOptimizer()->GetStopConditionDescription()
+                << std::endl;
+        }
+        catch( itk::ExceptionObject & err )
+        {
+            std::cerr << "ExceptionObject caught !" << std::endl;
+            std::cerr << err << std::endl;
+        }
+
+        //auto transform = registration->GetTransform();
+        //TransformType::ParametersType finalParameters = transform->GetParameters();
+
+
+
+        auto finalParams = registration->GetOutput()->Get()->GetParameters();
+        TransformType::Pointer outputTransform = TransformType::New();
+        outputTransform->SetCenter(center);
+        outputTransform->SetParameters(finalParams);
+        
+        TransformType::MatrixType matrix = outputTransform->GetMatrix();
+        offset = outputTransform->GetOffset();
+        vtkSmartPointer<vtkMatrix4x4> localMatrix_inv = vtkSmartPointer<vtkMatrix4x4>::New();
+
+        for( unsigned int i = 0; i < 3; i++ )
+        {
+            for( unsigned int j = 0; j < 3; j++ )
+            {
+                localMatrix_inv->SetElement(i, j, matrix.GetVnlMatrix().get(i, j));
+            }
+
+            localMatrix_inv->SetElement(i, 3, offset[i]);
+        }
+        localMatrix_inv->Invert();
+
+        //vtkSmartPointer<vtkMatrix4x4> finalMatrix = vtkSmartPointer<vtkMatrix4x4>::New();
+
+        //if( parentTransform != 0 )
+        //{
+        //    vtkSmartPointer<vtkMatrix4x4> parentWorldMatrix = vtkSmartPointer<vtkMatrix4x4>::New();
+        //    m_parentTransform->GetInverse(parentWorldMatrix);
+        //    finalMatrix->Multiply4x4(parentWorldMatrix, localMatrix_inv, localMatrix_inv);
+        //}
+
+        sourceVtkTransform->SetMatrix(localMatrix_inv);
+        
+
+
+
+        //<<<<<*******************************************//
+
         ctImageObject->FinishModifyingTransform();
         ctImageObject->SetLocalTransform(sourceVtkTransform);
+
     }
 
     ibisAPI->StopProgress(progress);
@@ -652,10 +814,10 @@ void VertebraRegistrationWidget::on_startRegistrationButton_clicked()
         m_isProcessing = true;
         QElapsedTimer timer;
         timer.start();
-        
+
         bool processOK;
         processOK = this->Register();
-        
+
         double elapsedTime = double(timer.elapsed()) / 1000.0;
         if( processOK )
             ui->elapsedTimeLabel->setText(tr("Time: ") + QString::number(elapsedTime) + tr(" s"));
@@ -858,7 +1020,6 @@ void VertebraRegistrationWidget::on_presetVolumeButton_clicked()
         imObj->ObjectModified();
 
         ui->opacityShiftSlider->setEnabled(true);
-
     }
 }
 

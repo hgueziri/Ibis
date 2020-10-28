@@ -34,8 +34,8 @@ QWidget * PedicleScrewNavigationPluginInterface::CreateTab()
 
     // Start the window
     m_interfaceWidget = new VertebraRegistrationWidget(0);
-    m_interfaceWidget->SetPluginInterface( this );
-    m_interfaceWidget->setAttribute( Qt::WA_DeleteOnClose, true );
+    m_interfaceWidget->SetPluginInterface(this);
+    m_interfaceWidget->setAttribute(Qt::WA_DeleteOnClose, true);
 
     return m_interfaceWidget;
 }

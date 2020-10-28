@@ -67,6 +67,9 @@ GPUOrientationMatchingMatrixTransformationSparseMask< TFixedImage, TMovingImage 
 
   m_MovingGPUImage = NULL;
   m_FixedGPUImage = NULL;
+
+  m_FixedGradientImage = NULL;
+  m_MovingGradientImage = NULL;
 }
 
 
@@ -372,24 +375,41 @@ GPUOrientationMatchingMatrixTransformationSparseMask< TFixedImage, TMovingImage 
   errid = clFinish(m_CommandQueue[0]);
   OpenCLCheckError(errid, __FILE__, __LINE__, ITK_LOCATION);
 
-  if(m_UseImageMask)
+  if( m_UseImageMask )
      {
      typename FixedImageMaskType::ConstPointer constFixedImage = m_FixedImageMaskSpatialObject->GetImage();
      FixedImageMaskIteratorType imageIterator( constFixedImage, constFixedImage->GetRequestedRegion() );
      for (imageIterator.GoToBegin(); !imageIterator.IsAtEnd(); ++imageIterator)
         {
         unsigned int idx = static_cast<unsigned int>(constFixedImage->ComputeOffset(imageIterator.GetIndex()));
-
-        if(imageIterator.Get() > 0)
-           {
-           cpuFixedGradientBuffer[idx*4 + 3] = (InternalRealType)1.0;
-           }
+        if( imageIterator.Get() > 0 )
+            {
+            cpuFixedGradientBuffer[idx * 4 + 3] = (InternalRealType)1.0;
+            }
         else
-           {
-           cpuFixedGradientBuffer[idx*4 + 3] = (InternalRealType)0.0;
-           }
+            {
+            cpuFixedGradientBuffer[idx * 4 + 3] = (InternalRealType)0.0;
+            }
         }
      }
+
+   m_FixedGradientImage = FixedImageGradientType::New();
+   m_FixedGradientImage->SetRegions(m_FixedImage->GetLargestPossibleRegion());
+   m_FixedGradientImage->SetDirection(m_FixedImage->GetDirection());
+   m_FixedGradientImage->SetOrigin(m_FixedImage->GetOrigin());
+   m_FixedGradientImage->SetSpacing(m_FixedImage->GetSpacing());
+   m_FixedGradientImage->Allocate(0);
+   FixedImageIteratorType imageIterator(m_FixedImage, m_FixedImage->GetRequestedRegion());
+   for( imageIterator.GoToBegin(); !imageIterator.IsAtEnd(); ++imageIterator )
+   {
+       unsigned int idx = static_cast<unsigned int>(m_FixedImage->ComputeOffset(imageIterator.GetIndex()));
+       FixedGradientType vect;
+       for( int j = 0; j < FixedImageDimension; j++ )
+          {
+          vect[j] = cpuFixedGradientBuffer[idx * 4 + j];
+          }
+       m_FixedGradientImage->SetPixel(imageIterator.GetIndex(), vect);
+   }
 
   clockGPUKernel.Stop();
   if(m_Debug)

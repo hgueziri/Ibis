@@ -127,6 +127,7 @@ public:
 GPU_WeightRigidRegistration::GPU_WeightRigidRegistration( ) :
     m_OptimizationRunning(false),
     m_debug(false),
+    m_StoreFixedGradientImage(false),
     m_initialSigma(1.0),
     m_populationSize(0),
     m_parentVtkTransform(0),
@@ -144,6 +145,7 @@ GPU_WeightRigidRegistration::GPU_WeightRigidRegistration( ) :
     m_orientationSamplingStrategy(OrientationSamplingStrategy::RANDOM),
     m_registrationMetricToUse(RegistrationMetricToUseType::INTENSITY)
 {
+    m_FixedGradientImage = nullptr;
 }
 
 GPU_WeightRigidRegistration::~GPU_WeightRigidRegistration()
@@ -304,7 +306,7 @@ void GPU_WeightRigidRegistration::runRegistration()
     optimizer->SetScales( scales );
     optimizer->SetUseCovarianceMatrixAdaptation( true );
     optimizer->SetUpdateBDPeriod( 0 );
-    optimizer->SetValueTolerance(0.0001);
+    optimizer->SetValueTolerance(0.001);
     optimizer->SetUseScales( true );
     optimizer->SetPopulationSize( populationSize );
     optimizer->SetNumberOfParents( populationSize / 2 );
@@ -325,6 +327,10 @@ void GPU_WeightRigidRegistration::runRegistration()
     try
     {
       optimizer->StartOptimization();
+      if( m_StoreFixedGradientImage )
+      {
+          m_FixedGradientImage = costFunction->GetFixedGradientImage();
+      }
       if (m_debug)
         std::cout << "Optimizer stop condition: " << optimizer->GetStopConditionDescription() << std::endl;
     }
