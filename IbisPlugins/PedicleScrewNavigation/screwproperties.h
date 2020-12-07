@@ -64,7 +64,7 @@ public:
     void SetSagittalActor(vtkSmartPointer<vtkActor> actor) { m_sagittalActor = actor; }
 
     void SetScrewProperties(double length, double diameter, double tipSize);
-    static void GetScrewPolyData(double length, double diameter, double tipSize, vtkSmartPointer<vtkPolyData> &polyData);
+    static void GetScrewPolyData(double length, double diameter, double tipSize, vtkSmartPointer<vtkPolyData> &polyData, double yoffset=0);
     void GetScrewPolyData(vtkSmartPointer<vtkPolyData> polyData);
 
     void Update();

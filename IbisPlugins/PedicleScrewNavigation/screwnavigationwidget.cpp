@@ -19,6 +19,7 @@ ScrewNavigationWidget::ScrewNavigationWidget(std::vector<Screw *> plannedScrews,
     ui(new Ui::ScrewNavigationWidget),
     m_pluginInterface(nullptr),
     m_axialScrewSource(nullptr),
+    m_instrumentWidth(4.5),
     m_screwDiameter(5.5),
     m_screwLength(50),
     m_screwTipSize(3),
@@ -84,6 +85,7 @@ ScrewNavigationWidget::ScrewNavigationWidget(std::vector<Screw *> plannedScrews,
     this->SetPlannedScrews(plannedScrews);
 
     this->UpdatePointerDirection();
+    this->InitializeInstrumentDrawing();
     this->InitializeScrewDrawing();
     this->InitializeRulerDrawing();
     this->InitializeAnnotationDrawing();
@@ -104,6 +106,7 @@ ScrewNavigationWidget::~ScrewNavigationWidget()
     }
     m_axialActor->VisibilityOff();
     m_sagittalActor->VisibilityOff();
+    m_instrumentActor->VisibilityOff();
     m_screwActor->VisibilityOff();
     m_rulerActor->VisibilityOff();
     m_pluginInterface = 0;
@@ -366,6 +369,7 @@ void ScrewNavigationWidget::Navigate()
                 connect( ibisApi, SIGNAL(IbisClockTick()), this, SLOT(OnPointerPositionUpdated()) );
                 m_axialActor->VisibilityOn();
                 m_sagittalActor->VisibilityOn();
+                m_instrumentActor->VisibilityOn();
                 m_screwActor->VisibilityOn();
                 m_rulerActor->VisibilityOn();
             }
@@ -957,24 +961,22 @@ void ScrewNavigationWidget::SetDefaultView( vtkSmartPointer<vtkRenderer> rendere
     cam->SetFocalPoint( 0.0, -m_screwLength * 0.5, prevFocal[2] );
 }
 
+void ScrewNavigationWidget::InitializeInstrumentDrawing()
+{
+    // Create instrument polydata
+    m_instrumentActor = vtkSmartPointer<vtkActor>::New();
+    m_instrumentActor->GetProperty()->SetLineWidth(3.0);
+    m_instrumentActor->GetProperty()->SetColor(1, 0, 0);
+    m_instrumentActor->VisibilityOn();
+
+    this->UpdateInstrumentDrawing();
+
+    m_axialRenderer->AddViewProp(m_instrumentActor);
+    m_sagittalRenderer->AddViewProp(m_instrumentActor);
+}
+
 void ScrewNavigationWidget::InitializeScrewDrawing()
 {
-    // Create instrument line
-    vtkSmartPointer<vtkLineSource> instrumentSource = vtkSmartPointer<vtkLineSource>::New();
-    instrumentSource->SetPoint1(0.0, 0.0, 0.0);
-    instrumentSource->SetPoint2(0.0, 2 * m_screwLength, 0.0);
-
-    vtkSmartPointer<vtkPolyDataMapper> instrumentLineMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-    instrumentLineMapper->SetInputConnection(instrumentSource->GetOutputPort(0));
-
-    vtkSmartPointer<vtkActor> instrumentActor = vtkSmartPointer<vtkActor>::New();
-    instrumentActor->SetMapper(instrumentLineMapper);
-    instrumentActor->GetProperty()->SetLineWidth(3.0);
-    instrumentActor->GetProperty()->SetColor(1, 0, 0);
-    instrumentActor->VisibilityOn();
-    m_axialRenderer->AddViewProp(instrumentActor);
-    m_sagittalRenderer->AddViewProp(instrumentActor);
-
     // Create screw
     m_screwActor = vtkSmartPointer<vtkActor>::New();
     m_screwActor->GetProperty()->SetLineWidth(3.0);
@@ -1040,6 +1042,33 @@ void ScrewNavigationWidget::InitializeAnnotationDrawing()
     ui->sagittalBottomLabel->move(ui->sagittalImageWindow->width() / 2.0 - ui->sagittalTopLabel->width() - 10, ui->sagittalImageWindow->height() - 10 );
     ui->sagittalBottomLabel->setStyleSheet("QLabel { background-color: black; color : white; }");
 
+}
+
+void ScrewNavigationWidget::UpdateInstrumentDrawing()
+{
+    vtkSmartPointer<vtkPolyData> polyData;
+    if (m_instrumentActor->GetMapper())
+    {
+        polyData = vtkPolyData::SafeDownCast(m_instrumentActor->GetMapper()->GetInput());
+        polyData->DeleteCells();
+    }
+    else
+    {
+        polyData = vtkSmartPointer<vtkPolyData>::New();
+    }
+
+    double diameter = m_instrumentWidth;
+    double length = 2 * m_screwLength;
+    double tipSize = 2.5;
+    Screw::GetScrewPolyData(length, diameter, tipSize, polyData, length);
+
+    vtkSmartPointer<vtkPolyDataMapper> lineMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    lineMapper->SetInputData(polyData);
+
+    if (m_instrumentActor)
+    {
+        m_instrumentActor->SetMapper(lineMapper);
+    }
 }
 
 void ScrewNavigationWidget::UpdateScrewDrawing()
@@ -1154,6 +1183,12 @@ void ScrewNavigationWidget::on_rulerSpinBox_valueChanged( int value)
 {
     m_rulerLength = value;
     this->UpdateRulerDrawing();
+}
+
+void ScrewNavigationWidget::on_instrumentWidthSpinBox_valueChanged( double value)
+{
+    m_instrumentWidth = value;
+    this->UpdateInstrumentDrawing();
 }
 
 void ScrewNavigationWidget::OnScrewListItemChanged(QListWidgetItem * item)

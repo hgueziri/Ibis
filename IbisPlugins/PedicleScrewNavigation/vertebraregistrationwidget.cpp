@@ -23,9 +23,9 @@ VertebraRegistrationWidget::VertebraRegistrationWidget(QWidget *parent) :
     m_lambdaMetricBalance(0.5),
     m_showAdvancedSettings(false),
     m_optNumberOfPixels(128000),
-    m_optSelectivity(32),
+    m_optSelectivity(64),
     m_optPercentile(0.8),
-    m_optPopulationSize(60),
+    m_optPopulationSize(80),
     m_optInitialSigma(1.0)
 {
     m_pluginInterface = 0;
@@ -145,7 +145,7 @@ void VertebraRegistrationWidget::UpdateUi()
     ui->optPopulationSizeComboBox->addItem( tr( "70" ), 70 );
     ui->optPopulationSizeComboBox->addItem( tr( "80" ), 80 );
     ui->optPopulationSizeComboBox->addItem( tr( "90" ), 90 );
-    ui->optPopulationSizeComboBox->setCurrentIndex( 2 );
+    ui->optPopulationSizeComboBox->setCurrentIndex( 4 );
     
     ui->optInitialSigmaComboBox->addItem( tr( "0.1" ), 0.1 );
     ui->optInitialSigmaComboBox->addItem( tr( "1.0" ), 1.0 );

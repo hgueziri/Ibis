@@ -147,7 +147,7 @@ void Screw::SetScrewProperties(double length, double diameter, double tipSize)
     m_tipSize = tipSize;
 }
 
-void Screw::GetScrewPolyData(double length, double diameter, double tipSize, vtkSmartPointer<vtkPolyData> &polyData)
+void Screw::GetScrewPolyData(double length, double diameter, double tipSize, vtkSmartPointer<vtkPolyData> &polyData, double yoffset)
 {
     /* Screw cross-section representation
      *
@@ -160,11 +160,11 @@ void Screw::GetScrewPolyData(double length, double diameter, double tipSize, vtk
      *            \/
      *            p3
      * */
-    double p0[3] = { -diameter/2.0, 0.0, 0.0 };
-    double p1[3] = {  diameter/2.0, 0.0, 0.0 };
-    double p2[3] = {  diameter/2.0, -length + tipSize, 0.0 };
-    double p3[3] = { 0.0, -length, 0.0 };
-    double p4[3] = { -diameter/2.0, -length + tipSize, 0.0 };
+    double p0[3] = { -diameter/2.0, 0.0 + yoffset, 0.0 };
+    double p1[3] = {  diameter/2.0, 0.0 + yoffset, 0.0 };
+    double p2[3] = {  diameter/2.0, -length + tipSize + yoffset, 0.0 };
+    double p3[3] = { 0.0, -length + yoffset, 0.0 };
+    double p4[3] = { -diameter/2.0, -length + tipSize + yoffset, 0.0 };
 
     vtkSmartPointer<vtkPoints> pts = vtkSmartPointer<vtkPoints>::New();
     pts->InsertNextPoint(p0);

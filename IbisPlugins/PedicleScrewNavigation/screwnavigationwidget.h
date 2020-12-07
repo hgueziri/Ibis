@@ -122,11 +122,13 @@ private:
     bool GetPointerDirection(double (&dir)[3]);
 
     void SetDefaultView( vtkSmartPointer<vtkRenderer> );
+    void InitializeInstrumentDrawing();
     void InitializeScrewDrawing();
     void InitializeRulerDrawing();
     void InitializeAnnotationDrawing();
 
     void UpdatePointerDirection();
+    void UpdateInstrumentDrawing();
     void UpdateScrewDrawing();
     void UpdateRulerDrawing();
     void RecenterResliceAxes(vtkMatrix4x4 *);
@@ -143,6 +145,7 @@ private:
     PedicleScrewNavigationPluginInterface * m_pluginInterface;
 
     int m_screwPlanImageDataId;
+    double m_instrumentWidth;
     double m_screwDiameter;
     double m_screwLength;
     double m_screwTipSize;
@@ -152,6 +155,7 @@ private:
     bool m_isSagittalViewFlipped;
     bool m_isAxialViewFlipped;
 
+    vtkSmartPointer<vtkActor> m_instrumentActor;
     vtkSmartPointer<vtkActor> m_screwActor;
     vtkSmartPointer<vtkActor> m_rulerActor;
 
@@ -198,6 +202,7 @@ public slots:
 
 private slots:
     void on_rulerSpinBox_valueChanged(int);
+    void on_instrumentWidthSpinBox_valueChanged( double );
 
     void OnObjectAddedSlot( int );
     void OnObjectRemovedSlot( int );
