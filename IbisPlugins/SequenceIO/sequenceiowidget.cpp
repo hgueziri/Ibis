@@ -69,6 +69,7 @@ void SequenceIOWidget::SetPluginInterface( SequenceIOPluginInterface * interf )
 template <typename ImageType>
 void SequenceIOWidget::WriteAcquisition(USAcquisitionObject * usAcquisitionObject, itk::SmartPointer<ImageType> image)
 {
+    Q_ASSERT(usAcquisitionObject);
     m_recordfile.open(m_outputFilename.toUtf8().constData(), std::ios::out | std::ios::binary);
     if( m_recordfile )
     {
@@ -164,6 +165,7 @@ void SequenceIOWidget::WriteAcquisition(USAcquisitionObject * usAcquisitionObjec
 
 bool SequenceIOWidget::ReadAcquisitionMetaData(QString filename, AcqProperties * &props)
 {
+    Q_ASSERT(props);
     std::ifstream filereader(filename.toUtf8().constData(), std::ios::in | std::ios::binary);
     if( filereader.is_open() )
     {   
@@ -253,6 +255,7 @@ bool SequenceIOWidget::ReadAcquisitionMetaData(QString filename, AcqProperties *
 
 USAcquisitionObject * SequenceIOWidget::ReadAcquisitionData(QString filename, AcqProperties * props)
 {
+    Q_ASSERT(props);
     std::ifstream filereader(filename.toUtf8().constData(), std::ios::in | std::ios::binary);
     if( !filereader.is_open() )
         return nullptr;
@@ -467,14 +470,16 @@ void SequenceIOWidget::UpdateProgress(int i)
 }
 
 void SequenceIOWidget::GetImage(USAcquisitionObject * usAcquisitionObject,
-                                                itk::SmartPointer<IbisItkUnsignedChar3ImageType> &image, int i)
+                                itk::SmartPointer<IbisItkUnsignedChar3ImageType> &image, int i)
 {
+    Q_ASSERT(usAcquisitionObject);
     usAcquisitionObject->GetItkImage(image, i, m_useMask, false);
 }
 
 void SequenceIOWidget::GetImage(USAcquisitionObject * usAcquisitionObject,
-                                                itk::SmartPointer<IbisRGBImageType> & image, int i)
+                                itk::SmartPointer<IbisRGBImageType> & image, int i)
 {
+    Q_ASSERT(usAcquisitionObject);
     usAcquisitionObject->GetItkRGBImage(image, i, m_useMask, false);
 }
 
@@ -647,7 +652,8 @@ void SequenceIOWidget::on_exportButton_clicked()
     if( !m_outputFilename.isEmpty() )
     {
         this->StartProgress(usAcquisitionObject->GetNumberOfSlices() * 2, tr("Ultrasound sequence IO"));
-        m_progressBar->setLabelText(tr("Exporting..."));
+        if( m_progressBar )
+            m_progressBar->setLabelText(tr("Exporting..."));
         connect(this, SIGNAL(exportProgressUpdated(int)), this, SLOT(UpdateProgress(int)));
 
         if( usAcquisitionObject->GetAcquisitionColor() == ACQ_COLOR_RGB )
