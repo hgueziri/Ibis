@@ -31,7 +31,7 @@ set( IBIS_EXTERNAL_DEPENDENCIES_DIR ${CMAKE_CURRENT_BINARY_DIR}/../IbisDeps CACH
 # Look for QT5 (required)
 #==================================================================
 option( IBIS_USE_QT_MULTIMEDIA "Find and link with the Multimedia module in Qt. This is not required by Ibis but may be used by some plugins." OFF )
-set( IbisQtModules Widgets OpenGL Xml )
+set( IbisQtModules Widgets OpenGL Xml Network )
 if( IBIS_USE_QT_MULTIMEDIA )
     list( APPEND IbisQtModules Multimedia )
 endif()
@@ -57,6 +57,7 @@ endif(Qt5Widgets_FOUND)
 include_directories( ${Qt5Widgets_INCLUDE_DIRS} )
 include_directories( ${Qt5Xml_INCLUDE_DIRS} )
 include_directories( ${Qt5Multimedia_INCLUDE_DIRS} )
+include_directories( ${Qt5Network_INCLUDE_DIRS} )
 
 #==================================================================
 # Look for VTK (required)
