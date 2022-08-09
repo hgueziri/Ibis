@@ -619,11 +619,7 @@ void DoubleViewWidget::on_maskAlphaSlider_valueChanged( int value )
     UpdateUi();
 }
 
-<<<<<<< HEAD
 void DoubleViewWidget::SetDefaultView( vtkSmartPointer<vtkImageSlice> actor, vtkSmartPointer<vtkRenderer> renderer )
-=======
-void SetDefaultView( vtkSmartPointer<vtkImageSlice> actor, vtkSmartPointer<vtkRenderer> renderer, QWidget *window )
->>>>>>> fixing double view
 {
     // The initial code was done for fixed sized images, of the same size as view windows.
     // The real image may be now of different size and we have to calculete camera position and focal accordingly.
@@ -642,30 +638,14 @@ void SetDefaultView( vtkSmartPointer<vtkImageSlice> actor, vtkSmartPointer<vtkRe
     double * prevFocal = cam->GetFocalPoint();
     cam->SetPosition( scalex, scaley, prevPos[2] );
     cam->SetFocalPoint( scalex, scaley, prevFocal[2] );
-<<<<<<< HEAD
-=======
-
-    double initialWidth = window->width();
-    double initialHeight = window->height();
-    vtkSmartPointer<vtkTransform> t = vtkSmartPointer<vtkTransform>::New();
-    t->Translate( (diffx - initialWidth + 1)/2.0, (diffy - initialHeight + 1)/2.0, 0);
-    //cam->ApplyTransform( t );
-    actor->SetPosition((diffx - initialWidth + 1)/2.0, (diffy - initialHeight + 1)/2.0, 0);
->>>>>>> fixing double view
 }
 
 void DoubleViewWidget::SetDefaultViews()
 {
     // adjust position of left image
-<<<<<<< HEAD
     SetDefaultView( m_usActor, m_usRenderer );
-    // adjust position of rightt image
-    SetDefaultView( m_mriActor, m_mriRenderer );
-=======
-    SetDefaultView( m_usActor, m_usRenderer, ui->usImageWindow );
     // adjust position of right image
-    SetDefaultView( m_mriActor, m_mriRenderer, ui->mriImageWindow);
->>>>>>> fixing double view
+    SetDefaultView( m_mriActor, m_mriRenderer );
 }
 
 void DoubleViewWidget::on_restoreViewsPushButton_clicked()
