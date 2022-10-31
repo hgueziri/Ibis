@@ -316,6 +316,7 @@ void GPU_RigidRegistration::runRegistration()
         timer.Start("Registration");
     }
 
+    m_rngSeed ? optimizer->SetRandomGeneratorSeed(m_rngSeed) : optimizer->UnseedRandomGenerator();
     optimizer->SetCostFunction( costFunction ); 
     optimizer->SetInitialPosition( itkTransform->GetParameters() );
     OptimizerType::ScalesType   scales =  OptimizerType::ScalesType(itkTransform->GetNumberOfParameters());

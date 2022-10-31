@@ -86,9 +86,10 @@ public:
     void SetSamplingStrategyToFull()      { this->m_samplingStrategy = SamplingStrategy::FULL; }
     SamplingStrategy GetSamplingStrategy() { return this->m_samplingStrategy; }
 
-
     void SetTargetMask(ImageMaskPointer mask) { this->m_targetSpatialObjectMask = mask;}
     void SetSourceMask(ImageMaskPointer mask) { this->m_sourceSpatialObjectMask = mask; }
+
+    void SetRandomGeneratorSeed(unsigned int seed) { this->m_rngSeed = seed; }
 
 private:
 
@@ -115,6 +116,7 @@ private:
     unsigned int m_numberOfPixels;
     unsigned int m_orientationSelectivity;
     unsigned int m_populationSize;
+    unsigned int m_rngSeed;
 
     vtkTransform * m_parentVtkTransform;
     SamplingStrategy m_samplingStrategy;

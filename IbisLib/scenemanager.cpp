@@ -796,6 +796,7 @@ void SceneManager::RemoveObjectById( int objectId )
 void SceneManager::RemoveObject( SceneObject * object )
 {
     int objId = object->GetObjectID();
+    std::string name = object->GetName().toUtf8().constData();
 
     // first, make sure we have a reference to this object
     int indexAll = this->AllObjects.indexOf( object );

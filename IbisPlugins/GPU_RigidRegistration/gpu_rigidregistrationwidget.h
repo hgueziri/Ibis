@@ -59,6 +59,7 @@ private:
 private slots:
 
     void on_startButton_clicked();
+    void on_seedCheckBox_clicked();
     void on_sourceImageComboBox_activated(int index);
     void on_debugCheckBox_clicked();
 

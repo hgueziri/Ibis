@@ -98,6 +98,7 @@ void GPU_RigidRegistrationWidget::on_startButton_clicked()
     rigidRegistrator->SetPercentile( ui->percentileComboBox->itemData( ui->percentileComboBox->currentIndex() ).toDouble() );
     rigidRegistrator->SetUseMask( ui->computeMaskCheckBox->isChecked() );
     rigidRegistrator->SetDebug( debug, &debugStringStream);
+    rigidRegistrator->SetRandomGeneratorSeed(ui->seedSpinBox->value() * ui->seedCheckBox->isChecked());
 
     // Set image inputs
     rigidRegistrator->SetItkSourceImage( itkSourceImage );
@@ -200,6 +201,11 @@ void GPU_RigidRegistrationWidget::UpdateUi()
     {
       ui->transformObjectComboBox->addItem( "None", QVariant(-1) );
     }
+}
+
+void GPU_RigidRegistrationWidget::on_seedCheckBox_clicked()
+{
+    ui->seedSpinBox->setEnabled(ui->seedCheckBox->isChecked());
 }
 
 void GPU_RigidRegistrationWidget::on_sourceImageComboBox_activated(int index)
