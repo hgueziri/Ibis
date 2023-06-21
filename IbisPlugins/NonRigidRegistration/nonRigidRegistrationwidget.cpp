@@ -44,13 +44,22 @@ NonRigidRegistrationWidget::NonRigidRegistrationWidget(QWidget *parent) :
 
 NonRigidRegistrationWidget::~NonRigidRegistrationWidget()
 {
+    disconnect(this, SLOT(on_objectAdded(int)));
+    disconnect(this, SLOT(on_objectRemoved(int)));
+
     delete m_Qout;
     delete ui;
 }
 
 void NonRigidRegistrationWidget::SetPluginInterface( NonRigidRegistrationPluginInterface * interf )
 {
+    Q_ASSERT(interf);
     m_pluginInterface = interf;
+    
+    IbisAPI * ibisApi = interf->GetIbisAPI();
+    connect(ibisApi, SIGNAL(ObjectAdded(int)), this, SLOT(on_objectAdded(int)));
+    connect(ibisApi, SIGNAL(ObjectRemoved(int)), this, SLOT(on_objectRemoved(int)));
+    
     UpdateUi();
 }
 
@@ -355,3 +364,67 @@ void NonRigidRegistrationWidget::UpdateUi()
     }
 }
 
+void NonRigidRegistrationWidget::on_objectAdded(int idObject)
+{
+    Q_ASSERT(m_pluginInterface);
+
+    IbisAPI * api = m_pluginInterface->GetIbisAPI();
+
+    SceneObject * obj = api->GetObjectByID(idObject);
+    if( obj->IsA("ImageObject") ) 
+    {
+        // if only item contained in combobox is None
+        if( (ui->targetImageComboBox->count() == 1) && (ui->targetImageComboBox->currentData().toInt() == -1) ) 
+        {
+            ui->targetImageComboBox->clear();
+        }
+        if( (ui->sourceImageComboBox->count() == 1) && (ui->sourceImageComboBox->currentData().toInt() == -1) )
+        {
+            ui->sourceImageComboBox->clear();
+        }
+
+        // add image to combobox
+        ui->targetImageComboBox->addItem(obj->GetName(), QVariant(obj->GetObjectID()));
+        ui->sourceImageComboBox->addItem(obj->GetName(), QVariant(obj->GetObjectID()));
+    }
+}
+
+void NonRigidRegistrationWidget::on_objectRemoved(int idObject)
+{
+    Q_ASSERT(m_pluginInterface);
+    Q_ASSERT(ui->targetImageComboBox->count() == ui->sourceImageComboBox->count());
+
+    IbisAPI * api = m_pluginInterface->GetIbisAPI();
+
+    SceneObject * obj = api->GetObjectByID(idObject);
+    if( obj->IsA("ImageObject") )
+    {
+        for( int i = 0; i < ui->targetImageComboBox->count(); i++ )
+        {
+            int targetId = ui->targetImageComboBox->itemData(i).toInt();
+            int sourceId = ui->sourceImageComboBox->itemData(i).toInt();
+
+            // remove item
+            if( targetId == idObject )
+            {
+                ui->targetImageComboBox->removeItem(i);
+            }
+            if( sourceId == idObject )
+            {
+                ui->sourceImageComboBox->removeItem(i);
+            }
+
+        }
+
+        // if combobox is empy add None item
+        if( ui->targetImageComboBox->count() == 0 )
+        {
+            ui->targetImageComboBox->addItem("None", QVariant(-1));
+        }
+
+        if( ui->sourceImageComboBox->count() == 0 )
+        {
+            ui->sourceImageComboBox->addItem("None", QVariant(-1));
+        }
+    }
+}

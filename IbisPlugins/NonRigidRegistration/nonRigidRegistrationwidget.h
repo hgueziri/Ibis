@@ -138,6 +138,9 @@ private slots:
     void on_startButton_clicked();
     void registration_finished();
 
+    void on_objectAdded(int);
+    void on_objectRemoved(int);
+
 protected:
     void closeEvent(QCloseEvent *event)
      {

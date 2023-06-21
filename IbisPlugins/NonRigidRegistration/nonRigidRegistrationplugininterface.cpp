@@ -33,6 +33,7 @@ QWidget * NonRigidRegistrationPluginInterface::CreateTab()
     NonRigidRegistrationWidget * widget = new NonRigidRegistrationWidget;
     widget->SetPluginInterface(this);
     widget->setAttribute(Qt::WA_DeleteOnClose, true);
+
     return widget;
 }
 
