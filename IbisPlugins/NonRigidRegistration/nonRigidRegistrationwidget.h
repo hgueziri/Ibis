@@ -74,6 +74,7 @@ typedef itk::ImageFileWriter<DoubleImageType>
                                            WriterType;
 
 struct RegistrationParametersType {
+  int numberOfLevels;
   int numberOfVoxels;
   int numberOfIterations;
   SamplingModeType samplingMode;

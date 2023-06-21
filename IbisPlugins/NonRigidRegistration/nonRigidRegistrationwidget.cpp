@@ -117,15 +117,18 @@ void NonRigidRegistrationWidget::on_startButton_clicked()
       m_NonRigidRegistration->SetFixedMask( eroder->GetOutput() );
       ui->userFeedbackLabel->setText(QString("Computing Mask..Done"));
       std::cout << "Computing Mask ... DONE"   << std::endl;
-//      //Add Mask Volume to Scene
-//      m_BackCaster->SetInput( eroder->GetOutput() );
-//      m_BackCaster->Update();
+      // DEBUG
+      //Add Mask Volume to Scene
+      /*
+      m_BackCaster->SetInput( eroder->GetOutput() );
+      m_BackCaster->Update();
 
-//      ImageObject * maskImage = ImageObject::New();
-//      maskImage->SetItkImage( m_BackCaster->GetOutput() );
-//      maskImage->SetName("Mask Image");
+      ImageObject * maskImage = ImageObject::New();
+      maskImage->SetItkImage( m_BackCaster->GetOutput() );
+      maskImage->SetName("Mask Image");
 
-//      sm->AddObject(maskImage, sourceImageObject->GetParent() );
+      api->AddObject(maskImage, sourceImageObject->GetParent() );
+      //*/
 
       }
 
@@ -135,20 +138,24 @@ void NonRigidRegistrationWidget::on_startButton_clicked()
       m_NonRigidRegistration->SetRigidTransform( rigidTransform );      
       } 
 
-    m_NonRigidRegistration->SetSelectivity( regParameters.selectivity );
-    m_NonRigidRegistration->SetKnotSpacing( regParameters.knotSpacing, 0 );
-    m_NonRigidRegistration->SetDistanceVariance( regParameters.distanceVariance, 0 );
-    m_NonRigidRegistration->SetNumberOfVoxels( regParameters.numberOfVoxels, 0 );
-    m_NonRigidRegistration->SetNumberOfIterations( regParameters.numberOfIterations, 0 );
-    m_NonRigidRegistration->SetSamplingMode( regParameters.samplingMode, 0 );
-    m_NonRigidRegistration->SetGradientScale( regParameters.gradientScale, 0 );
-    m_NonRigidRegistration->SetImageSpacing( regParameters.imageSpacing, 0 );
-    m_NonRigidRegistration->SetSymmetryEnabled( regParameters.symmetric );
+    m_NonRigidRegistration->SetNumberOfLevels(regParameters.numberOfLevels);
+    for( int i = 0; i < regParameters.numberOfLevels; i++ )
+    {
+        m_NonRigidRegistration->SetSelectivity(regParameters.selectivity);
+        m_NonRigidRegistration->SetKnotSpacing(regParameters.knotSpacing, i);
+        m_NonRigidRegistration->SetDistanceVariance(regParameters.distanceVariance, i);
+        m_NonRigidRegistration->SetNumberOfVoxels(regParameters.numberOfVoxels, i);
+        m_NonRigidRegistration->SetNumberOfIterations(regParameters.numberOfIterations, i );
+        m_NonRigidRegistration->SetSamplingMode(regParameters.samplingMode, i);
+        m_NonRigidRegistration->SetGradientScale(regParameters.gradientScale, i);
+        m_NonRigidRegistration->SetImageSpacing((regParameters.numberOfLevels - i - 1) * 2 + regParameters.imageSpacing, i); //regParameters.imageSpacing, i);
+        m_NonRigidRegistration->SetSymmetryEnabled(regParameters.symmetric);
+        m_NonRigidRegistration->SetVerbose(true);
+    }
 
-    m_NonRigidRegistration->SetFixedImage( m_FixedCaster->GetOutput(), 0 );
-    m_NonRigidRegistration->SetMovingImage( m_MovingCaster->GetOutput(), 0 );
-
-
+    m_NonRigidRegistration->SetFixedImage(m_FixedCaster->GetOutput(), 0);
+    m_NonRigidRegistration->SetMovingImage(m_MovingCaster->GetOutput(), 0);
+    
     m_NonRigidRegistration->Initialize();
 
     ui->progressBar->show();
@@ -291,13 +298,14 @@ void NonRigidRegistrationWidget::UpdateUi()
 
         //Build Presets
         RegistrationParametersType mr2mrRegParameters;
+        mr2mrRegParameters.numberOfLevels = 3;
         mr2mrRegParameters.selectivity = 3.0;
         mr2mrRegParameters.knotSpacing = 64.0;
         mr2mrRegParameters.gradientScale = 2.0;
         mr2mrRegParameters.imageSpacing = 2.0;
         mr2mrRegParameters.distanceVariance = 16.0;
         mr2mrRegParameters.samplingMode = SamplingModeType(1);
-        mr2mrRegParameters.numberOfIterations = 100;
+        mr2mrRegParameters.numberOfIterations = 60;
         mr2mrRegParameters.numberOfVoxels = 16000;
         mr2mrRegParameters.computeMask = false;
         mr2mrRegParameters.symmetric = true;
@@ -305,13 +313,14 @@ void NonRigidRegistrationWidget::UpdateUi()
 
 
         RegistrationParametersType us2mrRegParameters;
+        us2mrRegParameters.numberOfLevels = 1;
         us2mrRegParameters.selectivity = 2.0;
         us2mrRegParameters.knotSpacing = 64.0;
         us2mrRegParameters.gradientScale = 2.0;
-        us2mrRegParameters.imageSpacing = 0.0;
+        us2mrRegParameters.imageSpacing = 2.0;
         us2mrRegParameters.distanceVariance = 16.0;
         us2mrRegParameters.samplingMode = SamplingModeType(1);
-        us2mrRegParameters.numberOfIterations = 100;
+        us2mrRegParameters.numberOfIterations = 60;
         us2mrRegParameters.numberOfVoxels = 16000;
         us2mrRegParameters.computeMask = true;
         us2mrRegParameters.symmetric = false;

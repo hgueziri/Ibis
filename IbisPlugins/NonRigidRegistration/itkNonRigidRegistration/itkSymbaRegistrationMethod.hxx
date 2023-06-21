@@ -33,9 +33,9 @@ SymbaRegistrationMethod< NDimensions >
 
   m_Optimizer = GOAOptimizationType::New();
 
-  this->SetNumberOfImages(1);
+  this->SetNumberOfImages(m_NumberOfImages);
 
-  this->SetNumberOfLevels(1);
+  this->SetNumberOfLevels(m_NumberOfLevels);
 
   m_Selectivity = 3;
 
@@ -52,7 +52,7 @@ void
 SymbaRegistrationMethod< NDimensions >
 ::SetNumberOfLevels( unsigned int nbrOfLevels )
 {
-
+  m_NumberOfLevels = nbrOfLevels;
   m_NumberOfVoxelsList.resize(nbrOfLevels);
   m_NumberOfIterationsList.resize(nbrOfLevels);
   m_GradientScaleList.resize(nbrOfLevels);

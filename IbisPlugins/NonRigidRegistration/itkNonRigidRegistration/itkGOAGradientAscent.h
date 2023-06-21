@@ -86,9 +86,9 @@ namespace itk
 
     typedef enum SamplingModeType
     {
-       FullSampling,
-       SubsetSampling,
-       StochasticSubsetSampling
+       FullSampling = 0,
+       SubsetSampling = 1,
+       StochasticSubsetSampling = 2
     } SamplingModeType;
 
 

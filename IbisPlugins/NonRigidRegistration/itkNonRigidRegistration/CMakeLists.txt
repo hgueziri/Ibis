@@ -13,6 +13,7 @@ SET( IBIS_ITK_NONRIGID_REGISTRATION_SRC
     itkVectorLinearInterpolateImageFunction2.hxx    
     vnl_sd_matrix_tools.hxx    
     itkGradientOrientationDifferenceFilter.hxx    
+    itkNonRigidRegistration.cxx
 )
 
 SET( IBIS_ITK_NONRIGID_REGISTRATION_HDR
@@ -27,6 +28,7 @@ SET( IBIS_ITK_NONRIGID_REGISTRATION_HDR
     itkVectorLinearInterpolateImageFunction2.h    
     vnl_sd_matrix_tools.h   
     itkGradientOrientationDifferenceFilter.h
+    #itkNonRigidRegistration.h
 )
 
 #================================
@@ -52,4 +54,4 @@ target_link_libraries( itkNonRigidRegistration ${ITK_LIBRARIES} )
 # dependent projects
 #================================
 target_include_directories( itkNonRigidRegistration PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
-set_property(TARGET itkNonRigidRegistration PROPERTY POSITION_INDEPENDENT_CODE ON)
+#set_property(TARGET itkNonRigidRegistration PROPERTY POSITION_INDEPENDENT_CODE ON)
